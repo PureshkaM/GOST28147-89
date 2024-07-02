@@ -235,6 +235,7 @@ namespace GOST2814789 {
 			this->groupBox1->Controls->Add(this->FirstTextBox);
 			this->groupBox1->Controls->Add(this->FirstHexBox);
 			this->groupBox1->Controls->Add(this->SelectedFile);
+			this->groupBox1->Enabled = false;
 			this->groupBox1->Font = (gcnew System::Drawing::Font(L"Microsoft YaHei UI", 9, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(204)));
 			this->groupBox1->Location = System::Drawing::Point(15, 32);
@@ -290,6 +291,7 @@ namespace GOST2814789 {
 			this->groupBox2->Controls->Add(this->KeyTextBox);
 			this->groupBox2->Controls->Add(this->KeyHexBox);
 			this->groupBox2->Controls->Add(this->KeyFile);
+			this->groupBox2->Enabled = false;
 			this->groupBox2->Font = (gcnew System::Drawing::Font(L"Microsoft YaHei UI", 9, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(204)));
 			this->groupBox2->Location = System::Drawing::Point(395, 34);
@@ -345,6 +347,7 @@ namespace GOST2814789 {
 			this->groupBox3->Controls->Add(this->SecondTextBox);
 			this->groupBox3->Controls->Add(this->SecondHexBox);
 			this->groupBox3->Controls->Add(this->ResultFile);
+			this->groupBox3->Enabled = false;
 			this->groupBox3->Font = (gcnew System::Drawing::Font(L"Microsoft YaHei UI", 9, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(204)));
 			this->groupBox3->Location = System::Drawing::Point(15, 186);
@@ -437,8 +440,7 @@ namespace GOST2814789 {
 			// TimeLabel
 			// 
 			this->TimeLabel->Name = L"TimeLabel";
-			this->TimeLabel->Size = System::Drawing::Size(13, 17);
-			this->TimeLabel->Text = L"1";
+			this->TimeLabel->Size = System::Drawing::Size(0, 17);
 			// 
 			// OpenKeyFile
 			// 
@@ -481,12 +483,20 @@ namespace GOST2814789 {
 		if (this->EncryptValue->Checked == true) {
 			this->Encrypt->Enabled = true;
 			this->Decrypt->Enabled = false;
+			this->groupBox1->Enabled = true;
+			this->groupBox2->Enabled = true;
+			this->groupBox3->Enabled = true;
+			ResultFilePath = "";
 		}
 	}
 	private: System::Void DecryptValue_CheckedChanged(System::Object^ sender, System::EventArgs^ e) {
 		if (this->DecryptValue->Checked == true) {
 			this->Decrypt->Enabled = true;
 			this->Encrypt->Enabled = false;
+			this->groupBox1->Enabled = true;
+			this->groupBox2->Enabled = true;
+			this->groupBox3->Enabled = true;
+			ResultFilePath = "";
 		}
 	}
 
@@ -584,22 +594,46 @@ namespace GOST2814789 {
 	private: System::Void ResultFile_Click(System::Object^ sender, System::EventArgs^ e) {
 		this->SaveFolder->Title = "Выберите место для сохранения файла";
 
-		if (this->SaveFolder->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-			try {
-				std::string FilePath = msclr::interop::marshal_as<std::string>(this->SaveFolder->FileName);
-				if (FilePath.find(".chip", size(FilePath) - 6) == std::string::npos) {
-					this->SaveFolder->FileName += ".chip";
-					FilePath = msclr::interop::marshal_as<std::string>(this->SaveFolder->FileName);
+		if (this->EncryptValue->Checked == true) {
+			this->SaveFolder->Filter = "Шифротекст GOST 28147-89 (*.chip)|*.chip";
+			if (this->SaveFolder->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
+				try {
+					std::string FilePath = msclr::interop::marshal_as<std::string>(this->SaveFolder->FileName);
+					if (FilePath.find(".chip", size(FilePath) - 6) == std::string::npos) {
+						this->SaveFolder->FileName += ".chip";
+						FilePath = msclr::interop::marshal_as<std::string>(this->SaveFolder->FileName);
+					}
+					SaveFolder->OpenFile();
+					StatusLabel->Text = "Путь к файлу выбран";
+					ResultFilePath = FilePath;
 				}
-				SaveFolder->OpenFile();
-				StatusLabel->Text = "Путь к файлу выбран";
-				ResultFilePath = FilePath;
+				catch (Exception^) {
+					StatusLabel->Text = "Ошибка при выборе пути";
+				}
+				finally {
+					this->SaveFolder->Reset();
+				}
 			}
-			catch (Exception^) {
-				StatusLabel->Text = "Ошибка при выборе пути";
-			}
-			finally {
-				this->SaveFolder->Reset();
+		}
+		else {
+			this->SaveFolder->Filter = "Текстовый документ (*.txt)|*.txt";
+			if (this->SaveFolder->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
+				try {
+					std::string FilePath = msclr::interop::marshal_as<std::string>(this->SaveFolder->FileName);
+					if (FilePath.find(".txt", size(FilePath) - 5) == std::string::npos) {
+						this->SaveFolder->FileName += ".txt";
+						FilePath = msclr::interop::marshal_as<std::string>(this->SaveFolder->FileName);
+					}
+					SaveFolder->OpenFile();
+					StatusLabel->Text = "Путь к файлу выбран";
+					ResultFilePath = FilePath;
+				}
+				catch (Exception^) {
+					StatusLabel->Text = "Ошибка при выборе пути";
+				}
+				finally {
+					this->SaveFolder->Reset();
+				}
 			}
 		}
 	}
