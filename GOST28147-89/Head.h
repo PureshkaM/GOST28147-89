@@ -4,6 +4,7 @@
 
 
 std::string ResultFilePath = "";
+std::string TextFilePath = "";
 
 
 namespace GOST2814789 {
@@ -486,16 +487,40 @@ namespace GOST2814789 {
 			this->groupBox1->Enabled = true;
 			this->groupBox2->Enabled = true;
 			this->groupBox3->Enabled = true;
+			this->FirstTextBox->ReadOnly = false;
+			this->FirstHexBox->ReadOnly = false;
+			this->SecondTextBox->ReadOnly = true;
+			this->SecondHexBox->ReadOnly = true;
+			FirstTextBox->Text = "";
+			FirstHexBox->Text = "";
+			KeyTextBox->Text = "";
+			KeyHexBox->Text = "";
+			SecondTextBox->Text = "";
+			SecondHexBox->Text = "";
+			TimeLabel->Text = "";
+			StatusLabel->Text = "";
 			ResultFilePath = "";
 		}
 	}
 	private: System::Void DecryptValue_CheckedChanged(System::Object^ sender, System::EventArgs^ e) {
 		if (this->DecryptValue->Checked == true) {
-			this->Decrypt->Enabled = true;
-			this->Encrypt->Enabled = false;
-			this->groupBox1->Enabled = true;
-			this->groupBox2->Enabled = true;
-			this->groupBox3->Enabled = true;
+			Decrypt->Enabled = true;
+			Encrypt->Enabled = false;
+			groupBox1->Enabled = true;
+			groupBox2->Enabled = true;
+			groupBox3->Enabled = true;
+			FirstTextBox->ReadOnly = true;
+			FirstHexBox->ReadOnly = true;
+			SecondTextBox->ReadOnly = false;
+			SecondHexBox->ReadOnly = false;
+			FirstTextBox->Text = "";
+			FirstHexBox->Text = "";
+			KeyTextBox->Text = "";
+			KeyHexBox->Text = "";
+			SecondTextBox->Text = "";
+			SecondHexBox->Text = "";
+			TimeLabel->Text = "";
+			StatusLabel->Text = "";
 			ResultFilePath = "";
 		}
 	}
@@ -505,18 +530,20 @@ namespace GOST2814789 {
 	private: System::Void SelectedFile_Click(System::Object^ sender, System::EventArgs^ e) {
 		std::string file;
 		this->OpenFile->Title = "Выберите файл с текстом";
+		TimeLabel->Text = "";
+		StatusLabel->Text = "";
 
 		if (this->OpenFile->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
 			try {
 				file = msclr::interop::marshal_as<std::string>(this->OpenFile->FileName);
+				TextFilePath = file;
 
-				FILE* f = fopen(file.c_str(), "r");
 				std::string text;
+				FILE* f = fopen(file.c_str(), "rb");
 				char c;
-				while ((c = fgetc(f)) != EOF) {
-					text.push_back(c);
+				while (fread(&c, sizeof(char), 1, f) == 1) {
+					text += c;
 				}
-
 				fclose(f);
 
 				FirstTextBox->Text = msclr::interop::marshal_as<String^>(text);
@@ -548,6 +575,8 @@ namespace GOST2814789 {
 
 		   //Выбор файла с ключом
 	private: System::Void KeyFile_Click(System::Object^ sender, System::EventArgs^ e) {
+		TimeLabel->Text = "";
+		StatusLabel->Text = "";
 		std::string key;
 		this->OpenKeyFile->Title = "Выберите файл с ключом";
 
@@ -555,13 +584,12 @@ namespace GOST2814789 {
 			try {
 				key = msclr::interop::marshal_as<std::string>(this->OpenKeyFile->FileName);
 
-				FILE* f = fopen(key.c_str(), "r");
 				std::string text;
+				FILE* f = fopen(key.c_str(), "rb");
 				char c;
-				while ((c = fgetc(f)) != EOF) {
-					text.push_back(c);
+				while (fread(&c, sizeof(char), 1, f) == 1) {
+					text += c;
 				}
-
 				fclose(f);
 
 				KeyTextBox->Text = msclr::interop::marshal_as<String^>(text);
@@ -592,18 +620,21 @@ namespace GOST2814789 {
 
 		   //Выбор места для сохранения результата
 	private: System::Void ResultFile_Click(System::Object^ sender, System::EventArgs^ e) {
+		TimeLabel->Text = "";
+		StatusLabel->Text = "";
 		this->SaveFolder->Title = "Выберите место для сохранения файла";
 
-		if (this->EncryptValue->Checked == true) {
+		if (this->EncryptValue->Checked == false) {
 			this->SaveFolder->Filter = "Шифротекст GOST 28147-89 (*.chip)|*.chip";
 			if (this->SaveFolder->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
+				System::IO::Stream^ fileStream = nullptr;
 				try {
 					std::string FilePath = msclr::interop::marshal_as<std::string>(this->SaveFolder->FileName);
 					if (FilePath.find(".chip", size(FilePath) - 6) == std::string::npos) {
 						this->SaveFolder->FileName += ".chip";
 						FilePath = msclr::interop::marshal_as<std::string>(this->SaveFolder->FileName);
 					}
-					SaveFolder->OpenFile();
+					fileStream = SaveFolder->OpenFile();
 					StatusLabel->Text = "Путь к файлу выбран";
 					ResultFilePath = FilePath;
 				}
@@ -611,6 +642,9 @@ namespace GOST2814789 {
 					StatusLabel->Text = "Ошибка при выборе пути";
 				}
 				finally {
+					if (fileStream != nullptr) {
+						fileStream->Close();
+					}
 					this->SaveFolder->Reset();
 				}
 			}
@@ -618,13 +652,14 @@ namespace GOST2814789 {
 		else {
 			this->SaveFolder->Filter = "Текстовый документ (*.txt)|*.txt";
 			if (this->SaveFolder->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
+				System::IO::Stream^ fileStream = nullptr;
 				try {
 					std::string FilePath = msclr::interop::marshal_as<std::string>(this->SaveFolder->FileName);
 					if (FilePath.find(".txt", size(FilePath) - 5) == std::string::npos) {
 						this->SaveFolder->FileName += ".txt";
 						FilePath = msclr::interop::marshal_as<std::string>(this->SaveFolder->FileName);
 					}
-					SaveFolder->OpenFile();
+					fileStream = SaveFolder->OpenFile();
 					StatusLabel->Text = "Путь к файлу выбран";
 					ResultFilePath = FilePath;
 				}
@@ -632,6 +667,9 @@ namespace GOST2814789 {
 					StatusLabel->Text = "Ошибка при выборе пути";
 				}
 				finally {
+					if (fileStream != nullptr) {
+						fileStream->Close();
+					}
 					this->SaveFolder->Reset();
 				}
 			}
@@ -641,6 +679,8 @@ namespace GOST2814789 {
 
 		   //Изменение поля текста в HEX
 	private: System::Void FirstTextBox_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+		TimeLabel->Text = "";
+		StatusLabel->Text = "";
 		String^ input = FirstTextBox->Text;
 		array<Byte>^ bytes = System::Text::Encoding::UTF8->GetBytes(input);
 		StringBuilder^ hexString = gcnew StringBuilder();
@@ -658,6 +698,8 @@ namespace GOST2814789 {
 
 		   //Изменение поля ключа в HEX
 	private: System::Void KeyTextBox_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+		TimeLabel->Text = "";
+		StatusLabel->Text = "";
 		String^ input = KeyTextBox->Text;
 		array<Byte>^ bytes = System::Text::Encoding::UTF8->GetBytes(input);
 		StringBuilder^ hexString = gcnew StringBuilder();
