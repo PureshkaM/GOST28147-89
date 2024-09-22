@@ -624,7 +624,7 @@ namespace GOST2814789 {
 		StatusLabel->Text = "";
 		this->SaveFolder->Title = "Выберите место для сохранения файла";
 
-		if (this->EncryptValue->Checked == false) {
+		if (this->EncryptValue->Checked == true) {
 			this->SaveFolder->Filter = "Шифротекст GOST 28147-89 (*.chip)|*.chip";
 			if (this->SaveFolder->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
 				System::IO::Stream^ fileStream = nullptr;
